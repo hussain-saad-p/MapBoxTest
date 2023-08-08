@@ -5,11 +5,15 @@ import android.os.Build
 import android.os.Bundle
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import androidx.appcompat.content.res.AppCompatResources
 import androidx.constraintlayout.motion.widget.Debug.getLocation
 import androidx.core.app.ActivityCompat
 import com.mapbox.android.core.permissions.PermissionsManager
 import com.mapbox.maps.MapView
 import com.mapbox.maps.Style
+import com.mapbox.maps.extension.style.expressions.dsl.generated.interpolate
+import com.mapbox.maps.plugin.LocationPuck2D
+import com.mapbox.maps.plugin.locationcomponent.location
 
 
 class MainActivity : AppCompatActivity() {
@@ -26,7 +30,7 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-//        setUpMapBox()
+        setUpMapBox()
         askLocationPermissions()
     }
 
@@ -55,11 +59,14 @@ class MainActivity : AppCompatActivity() {
             REQUEST_CODE
         )
         askBackgroundPermission()
-    } else Toast.makeText(
-        this@MainActivity,
-        "Location Permissions Provided",
-        Toast.LENGTH_SHORT
-    ).show()
+    } else {
+        Toast.makeText(
+            this@MainActivity,
+            "Location Permissions Provided",
+            Toast.LENGTH_SHORT
+        ).show()
+        showCurrentLocationOnMap()
+    }
 
     private fun askBackgroundPermission() = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
         if (ActivityCompat.checkSelfPermission(
@@ -105,14 +112,56 @@ class MainActivity : AppCompatActivity() {
         when (requestCode) {
             REQUEST_CODE -> if (grantResults[0] == PackageManager.PERMISSION_GRANTED) {
                 getLocation()
+                showCurrentLocationOnMap()
             } else {
                 // Permission Denied
                 Toast.makeText(this, "your message", Toast.LENGTH_SHORT)
                     .show()
             }
 
-            else -> super.onRequestPermissionsResult(requestCode, permissions!!, grantResults)
+            else -> super.onRequestPermissionsResult(requestCode, permissions, grantResults)
         }
+    }
+
+    private fun showCurrentLocationOnMap() {
+        mapView?.getMapboxMap()?.loadStyleUri(
+            Style.MAPBOX_STREETS
+        ) {
+            mapView?.location?.updateSettings {// After the style is loaded, initialize the Location component
+                enabled = true
+                pulsingEnabled = true
+            }
+        }
+        setLocationPuck()
+    }
+
+    private fun setLocationPuck() {
+        mapView?.location?.locationPuck = LocationPuck2D(
+            topImage = AppCompatResources.getDrawable(
+                this,
+                com.mapbox.maps.plugin.locationcomponent.R.drawable.mapbox_user_icon
+            ),
+            bearingImage = AppCompatResources.getDrawable(
+                this,
+                com.mapbox.maps.plugin.locationcomponent.R.drawable.mapbox_user_bearing_icon
+            ),
+            shadowImage = AppCompatResources.getDrawable(
+                this,
+                com.mapbox.maps.plugin.locationcomponent.R.drawable.mapbox_user_stroke_icon
+            ),
+            scaleExpression = interpolate {
+                linear()
+                zoom()
+                stop {
+                    literal(0.0)
+                    literal(0.6)
+                }
+                stop {
+                    literal(20.0)
+                    literal(1.0)
+                }
+            }.toJson()
+        )
     }
 
     /**

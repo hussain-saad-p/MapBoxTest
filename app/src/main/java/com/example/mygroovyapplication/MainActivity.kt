@@ -1,15 +1,20 @@
 package com.example.mygroovyapplication
 
+import android.Manifest
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
+import android.view.View
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.content.res.AppCompatResources
 import androidx.constraintlayout.motion.widget.Debug.getLocation
 import androidx.core.app.ActivityCompat
-import com.mapbox.android.core.permissions.PermissionsManager
+import com.google.android.gms.location.LocationServices
+import com.mapbox.geojson.Point
+import com.mapbox.maps.CameraOptions
 import com.mapbox.maps.MapView
+import com.mapbox.maps.MapboxMap
 import com.mapbox.maps.Style
 import com.mapbox.maps.extension.style.expressions.dsl.generated.interpolate
 import com.mapbox.maps.plugin.LocationPuck2D
@@ -24,7 +29,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private var mapView: MapView? = null
-    lateinit var permissionsManager: PermissionsManager
+    private var mapboxMap: MapboxMap? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -37,7 +42,9 @@ class MainActivity : AppCompatActivity() {
     private fun setUpMapBox() {
         mapView = findViewById(R.id.mapView)
         mapView?.getMapboxMap()?.loadStyleUri(Style.MAPBOX_STREETS)
+        mapboxMap = mapView?.getMapboxMap()
     }
+
 
     /**
      * Permissions Methods
@@ -162,7 +169,70 @@ class MainActivity : AppCompatActivity() {
                 }
             }.toJson()
         )
+
+        // set initial camera position
+//        val initialCameraOptions = CameraOptions.Builder()
+//            .center(Point.fromLngLat(-74.0066, 40.7135))
+//            .pitch(45.0)
+//            .zoom(15.5)
+//            .bearing(-17.6)
+//            .build()
+//
+//        val mapInitOptions = MapInitOptions(this, resourceOptions, mapOptions, plugins, initialCameraOptions, true)
+//        mapView = MapView(this, mapInitOptions)
+
+
+        if (ActivityCompat.checkSelfPermission(
+                this,
+                Manifest.permission.ACCESS_FINE_LOCATION
+            ) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(
+                this,
+                Manifest.permission.ACCESS_COARSE_LOCATION
+            ) != PackageManager.PERMISSION_GRANTED
+        ) {
+            // TODO: Consider calling
+            //    ActivityCompat#requestPermissions
+            // here to request the missing permissions, and then overriding
+            //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
+            //                                          int[] grantResults)
+            // to handle the case where the user grants the permission. See the documentation
+            // for ActivityCompat#requestPermissions for more details.
+            return
+        }
+        LocationServices.getFusedLocationProviderClient(this).lastLocation.addOnSuccessListener {
+
+            mapView?.getMapboxMap()?.setCamera(
+                CameraOptions.Builder()
+                    .center(
+                        Point.fromLngLat(
+                            it.longitude, it.latitude
+                        )
+                    )
+                    .zoom(15.5)
+                    .bearing(-17.6)
+                    .build()
+            )
+        }
+
+        findViewById<View>(R.id.floatingActionButton).setOnClickListener {
+            LocationServices.getFusedLocationProviderClient(this).lastLocation.addOnSuccessListener {
+
+                mapView?.getMapboxMap()?.setCamera(
+                    CameraOptions.Builder()
+                        .center(
+                            Point.fromLngLat(
+                                it.longitude, it.latitude
+                            )
+                        )
+                        .zoom(15.5)
+                        .bearing(-17.6)
+                        .build()
+                )
+            }
+        }
+
     }
+
 
     /**
      * MapBox Lifecycle Methods

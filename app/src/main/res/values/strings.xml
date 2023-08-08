@@ -1,4 +1,5 @@
 <resources>
     <string name="app_name">My Groovy Application</string>
     <string name="mapbox_access_token">pk.eyJ1IjoiaHNhYWQyIiwiYSI6ImNsbDB0dGZodTAwa3MzZXBibW1qYnNjdmUifQ.JXHpx38iSZk2WzSuUU1ZrQ</string>
+    <string name="get_current_location">Get Current Location</string>
 </resources>
